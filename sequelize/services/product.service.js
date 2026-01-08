@@ -1,88 +1,90 @@
-const { Cart, CartItem, Product } = require('../models');
+const { where } = require('sequelize');
+const { Product } = require('../models');
 
 
-// Function to get the active cart for a user
-async function getActiveCart(userId) {
-    //
-    let cart = await Cart.findOne({
-         where: { userId, status: true}
-    });
-
-    if (!cart) {
-        cart = await Cart.create({ userId }); // Create a new cart under the user
+//Simple service to get product by id
+async function getProductById(id) {
+    const product = await Product.findByPk(id);
+    if (!product) {
+        throw new Error('Product not found');
     }
-
-    return cart;
+    return product;
 }
 
-// Function to add a product to the user's cart
-async function addProductToCart(userId, productId, quantity) {
-    // Ensure the user has an active cart
-    const cart = await getActiveCart(userId);
-
-    const product = await Product.findByPk(productId);
-    if (!product) throw new Error('Product not found');
-
-    if (product.quantity < quantity) {
-        throw new Error('Insufficient product quantity');
-    }
-
-
-    // Find or create a cart item
-    const [item, created] = await CartItem.findOrCreate({
-        where: { // Look for existing cart item
-            cartId: cart.id,
-            productId: product.id
-        },
-        defaults: { quantity }
-    });
-
-    if (!created) {
-        // If the item already exists, update the quantity
-        item.quantity += quantity;
-        await item.save();
-    }
-
-    return item;
+// Listing all products a.k.a get all
+async function listProducts(filters = {}) {
+    return Product.findAll({where: filters});
 }
 
+// Stock Validation
+async function validateStock(productId, requestedQuantity) {
+    //check Product stock
+    const product = await getProductById(productId);
 
-// Function to update the quantity of a product in the user's cart
-async function updateCartItem(userId, productId, quantity) {
-    const cart = await getActiveCart(userId);
-
-    const item = await CartItem.findOne({
-        where: {
-            cartId: cart.id,
-            productId
-        }
-    });
-
-    if (!item) throw new Error('Cart item not found');
-
-    if (quantity <= 0) {
-        await item.destroy(); // Remove item if quantity is zero or less
-        return null;
+    if (product.quantity <= 0) {
+        throw new Error('Product is out of stock');
     }
 
-    item.quantity = quantity;        
-    await item.save();
+    if (requestedQuantity > product.quantity) {
+        throw new Error('Insufficient stock');
+    }
 
-    return item;
+    return true;
 }
 
-async function getCartItems(userId) {
-    const cart = await getActiveCart(userId);
+// Create Product
+async function createProduct(data) {
 
-    return CartItem.findAll({
-        where: { cartId: cart.id },
-        include: [Product]
-    });
+    //Validate data
+    if (data.quantity < 0) throw new Error('Invalid quantity');
+    if (data.price < 0) throw new Error('Invalid price');
+
+    //Create and return product
+    return Product.create(data)
+}
+
+//Update Product
+async function updateProduct(id, data) {
+    //Retrieve product by id
+    const product = await getProductById(id);
+
+    //Validate data
+    if (data.quantity !== undefined && data.quantity < 0) throw new Error('Invalid quantity');
+    if (data.price !== undefined && data.price < 0) throw new Error('Invalid price');
+
+    await product.update(data);
+    return product;
+
+
+}
+
+// Increment product stock
+async function incrementStock(productId, quantity, transaction = null) {
+    // get product by id
+    const product = await getProductById(productId, transaction);
+
+    product.quantity += quantity;
+    await product.save({ transaction });
+    return product;
+}
+
+async function decrementStock(productId, quantity, transaction = null) {
+    // get product by id
+    const product = await getProductById(productId, transaction);
+
+    if (product.quantity < quantity) throw new Error('Insufficient stock to decrement');
+
+    product.quantity -= quantity;
+    await product.save({ transaction });
+    return product;
 }
 
 module.exports = {
-    getActiveCart,
-    addProductToCart,
-    updateCartItem,
-    getCartItems
+    getProductById,
+    listProducts,
+    validateStock,
+    createProduct,
+    updateProduct,
+    incrementStock,
+    decrementStock
 };
