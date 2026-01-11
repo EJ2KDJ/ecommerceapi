@@ -1,4 +1,4 @@
-const cartService = require('../sequelize/services/cart.service');
+const cartService = require('../sequelize/service/cart.service');
 
 async function getCart(req, res) {
     try {

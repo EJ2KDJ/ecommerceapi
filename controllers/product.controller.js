@@ -1,4 +1,4 @@
-const productService = require('../services/product.service');
+const productService = require('../sequelize/service/product.service');
 
 async function listProducts(req, res) {
     try {

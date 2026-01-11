@@ -1,5 +1,4 @@
-const { registerUser } = require('../sequelize/services/auth.service');
-const orderService = require('../sequelize/services/order.service');
+const orderService = require('../sequelize/service/order.service');
 
 async function createOrder(req, res) {
     try {
