@@ -12,7 +12,7 @@ async function getCart(req, res) {
 
 async function addToCart(req, res) {
     try {
-        const cartItem = await cartService.addItemToCart(req.user.id, req.body);
+        const cartItem = await cartService.addProductToCart(req.user.id, req.body.productId, req.body.quantity);
         return res.status(201).json(cartItem);
     } catch (err) {
         console.error(err);

@@ -10,13 +10,19 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
-      Cart.belongsTo(models.User);
-      Cart.belongsToMany(models.Product, { through: 'CartItem', foreignKey: 'cartId' });
+      Cart.belongsTo(models.User, { foreignKey: 'userId' });
+      Cart.hasMany(models.CartItem, { foreignKey: 'cartId', onDelete: 'CASCADE' });
     }
   }
   Cart.init({
-    status: DataTypes.BOOLEAN
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    status: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    }
   }, {
     sequelize,
     modelName: 'Cart',

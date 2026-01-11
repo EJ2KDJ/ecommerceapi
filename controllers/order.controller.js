@@ -2,7 +2,7 @@ const orderService = require('../sequelize/service/order.service');
 
 async function createOrder(req, res) {
     try {
-        const order = await orderService.createOrder(req.user.id, req.body);
+        const order = await orderService.createOrderFromCart(req.user.id, req.body);
         return res.status(201).json(order);
     } catch (err) {
         console.error(err);

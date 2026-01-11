@@ -1,4 +1,3 @@
-const { where } = require('sequelize');
 const {Order, OrderItem, Product, Cart, CartItem} = require('../models');
 const {sequelize} = require('../models');
 
@@ -11,13 +10,13 @@ async function createOrderFromCart(userId) {
         const cart = await Cart.findOne({
             where: { userId, status: true },
             include: [{ 
-                model: Product,
-                through: {attributes: ['quantity']  }
+                model: CartItem,
+                include: [{ model: Product }]
             }],
             transaction
         });
 
-        if (!cart || !cart.Products || cart.Products.length === 0 ) {
+        if (!cart || !cart.CartItems || cart.CartItems.length === 0 ) {
             throw new Error('No active cart or cart is empty');
         }
 
@@ -25,8 +24,9 @@ async function createOrderFromCart(userId) {
         const orderItems = [];
 
         // Calculate total amount and prepare order items
-        for (const product of cart.Products) {
-            const quantity = product.CartItem.quantity;
+        for (const cartItem of cart.CartItems) {
+            const product = cartItem.Product;
+            const quantity = cartItem.quantity;
             if (product.quantity < quantity) {
                 throw new Error(`Insufficient quantity for product ${product.name}`);
             }
