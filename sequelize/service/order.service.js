@@ -1,5 +1,8 @@
+const { get } = require('../../routes/auth.routes');
 const {Order, OrderItem, Product, Cart, CartItem} = require('../models');
 const {sequelize} = require('../models');
+const { getActiveCart } = require('./cart.service');
+const PaymentService = require('./pay.service');
 
 async function createOrderFromCart(userId) {
     const transaction = await sequelize.transaction();
@@ -159,10 +162,75 @@ async function cancelOrder(orderId, userId) {
     }
 }
 
+
+
+async function checkout(userId) {
+  const cart = await getActiveCart(userId);
+
+  if (!cart) {
+    throw new Error('Cart is empty');
+  }
+
+  let total = 0;
+  for (const item of cart.CartItems) {
+    total += item.quantity * item.Product.price;
+  }
+
+  const paymentIntent =
+    await PaymentService.createPayIntent(total);
+
+  return {
+    clientSecret: paymentIntent.client_secret // Return client secret for frontend to complete payment. What if I dont have frontend? THen
+  };
+}
+
+async function finalizeOrder(userId) {
+  return sequelize.transaction(async (t) => {
+    const cart = await getActiveCart(userId, t);
+
+    if (!cart || cart.CartItems.length === 0) {
+      throw new Error('Cart is empty');
+    }
+
+    let total = 0;
+    for (const item of cart.CartItems) {
+      total += item.quantity * item.Product.price;
+    }
+
+    const order = await Order.create({
+      userId,
+      totalAmount: total,
+      payStatus: 'paid'
+    }, { transaction: t });
+
+    for (const item of cart.CartItems) {
+      await OrderItem.create({
+        orderId: order.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        priceAtPurchase: item.Product.price
+      }, { transaction: t });
+
+      await Product.decrement(
+        'quantity',
+        { by: item.quantity, where: { id: item.productId }, transaction: t }
+      );
+    }
+
+    await cart.update({ status: false }, { transaction: t });
+
+    return order;
+  });
+}
+
+
+
 module.exports = {
     createOrderFromCart,
     getUsersOrders,
     getOrderById,
     updateOrderPaymentStatus,
-    cancelOrder
+    cancelOrder,
+    checkout,
+    finalizeOrder
 };

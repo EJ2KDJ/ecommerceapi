@@ -13,5 +13,9 @@ router.get('/:orderId', auth, orderController.getSingleOrder);
 router.put('/:orderId/payment-status', auth, orderController.updatePaymentStatus);
 // Cancel Order
 router.delete('/:orderId', auth, orderController.cancelOrder);
+// Checkout
+router.post('/checkout', auth, orderController.checkout);
+// Confirm Order
+router.post('/confirm', auth, orderController.confirm);
 
 module.exports = router;

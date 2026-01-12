@@ -50,10 +50,32 @@ async function cancelOrder(req, res) {
     }
 }
 
+async function checkout(req, res) {
+    try {
+        const result = await orderService.checkout(req.user.id);
+        return res.status(200).json(result);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'server error' });
+    }
+}
+
+async function confirm(req, res) {
+    try {
+        const order = await orderService.finalizeOrder(req.user.id, req.params.orderId, req.body);
+        return res.status(200).json(order);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'server error' });
+    }
+}
+
 module.exports = {
     createOrder,
     getOrders,
     getSingleOrder,
     updatePaymentStatus,
-    cancelOrder
+    cancelOrder,
+    checkout,
+    confirm
 };

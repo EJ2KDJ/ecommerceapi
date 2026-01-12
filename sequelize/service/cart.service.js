@@ -5,7 +5,11 @@ const { Cart, CartItem, Product } = require('../models');
 async function getActiveCart(userId) {
     //
     let cart = await Cart.findOne({
-         where: { userId, status: true}
+         where: { userId, status: true},
+         include: [{
+             model: CartItem,
+             include: [{ model: Product }]
+         }]
     });
 
     if (!cart) {
