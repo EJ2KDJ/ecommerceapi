@@ -47,7 +47,7 @@ This project focuses on **data modeling, multi-table transactions, and real-worl
 
 ---
 
-## Database Structure (Simplified)
+## Database Structure
 
 - **User**
 - **Product**
@@ -64,5 +64,4 @@ This project focuses on **data modeling, multi-table transactions, and real-worl
 
 ### E-commerce Flow
 - Separating cart logic from order logic
-- Coordinating multi-table operations safely
 - Placing business logic in services instead of controllers
